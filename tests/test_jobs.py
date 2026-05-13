@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.pool import StaticPool
 # 1. Dynamically add the /backend directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 
@@ -14,9 +14,11 @@ from app.main import app
 from app.database import Base, get_db
 
 # Use an in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -72,3 +74,43 @@ def test_create_job_invalid_salary():
     )
     assert response.status_code == 422
     assert "salary_min must be strictly less than salary_max" in response.text
+
+
+
+def test_get_jobs_pagination_and_filtering():
+    # First, let's create a second job to search for
+    client.post(
+        "/api/jobs",
+        json={
+            "title": "Backend Developer",
+            "department": "Engineering",
+            "description": "Python API dev.",
+            "location": "remote",
+            "salary_min": 90000,
+            "salary_max": 110000,
+            "required_skills": ["Python", "FastAPI", "SQLAlchemy"],
+            "deadline": future_date(10)
+        },
+    )
+    
+    # Test Pagination (Limits result to 1 per page)
+    response = client.get("/api/jobs?page=1&per_page=1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] >= 2
+    assert len(data["results"]) == 1
+    assert data["page"] == 1
+    assert data["per_page"] == 1
+
+def test_get_jobs_skill_filtering():
+    # Test Filtering by Skill (Matches the 'Senior AI Engineer' from the first test)
+    response = client.get("/api/jobs?skill=LangGraph")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 1
+    assert data["results"][0]["title"] == "Senior AI Engineer"
+    
+    # Test Filtering by Location
+    response = client.get("/api/jobs?location=remote")
+    assert response.status_code == 200
+    assert len(response.json()["results"]) >= 2

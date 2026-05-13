@@ -33,3 +33,12 @@ class JobListingResponse(JobListingBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedJobListingResponse(BaseModel):
+    total_count: int
+    page: int
+    per_page: int
+    results: List[JobListingResponse]
+    
+    model_config = ConfigDict(from_attributes=True)
