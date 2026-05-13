@@ -1,4 +1,4 @@
-# 💼 Assessment Test 2 — JobBoard Pro: Job Listings, Applications & Status Workflow
+# 💼 Assessment Test — JobBoard Pro: Job Listings, Applications & Status Workflow
 
 ## Overview
 
