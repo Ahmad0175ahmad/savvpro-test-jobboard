@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, model_validator, ConfigDict, Field, field_validator
 from typing import List, Optional
 from datetime import date
 from enum import Enum
@@ -41,4 +41,29 @@ class PaginatedJobListingResponse(BaseModel):
     per_page: int
     results: List[JobListingResponse]
     
+    model_config = ConfigDict(from_attributes=True)
+
+class ApplicationBase(BaseModel):
+    applicant_name: str
+    email: str
+    years_experience: int = Field(ge=0)
+    cv_summary: str = Field(max_length=1000)
+    linkedin_url: Optional[str] = None
+
+    @field_validator('linkedin_url')
+    @classmethod
+    def validate_linkedin(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            if not (v.startswith('https://linkedin.com/') or v.startswith('https://www.linkedin.com/')):
+                raise ValueError('linkedin_url must begin with https://linkedin.com/ or https://www.linkedin.com/')
+        return v
+
+class ApplicationCreate(ApplicationBase):
+    pass
+
+class ApplicationResponse(ApplicationBase):
+    id: int
+    job_id: int
+    status: str
+
     model_config = ConfigDict(from_attributes=True)
