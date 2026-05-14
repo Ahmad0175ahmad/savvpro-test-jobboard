@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 from . import models, schemas, crud
 from .database import engine, get_db
 from datetime import date
@@ -8,6 +9,14 @@ from datetime import date
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="JobBoard Pro API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Allow your Next.js app
+    allow_credentials=True,
+    allow_methods=["*"], # Allow all methods (GET, POST, PATCH, etc.)
+    allow_headers=["*"],
+)
 
 @app.post("/api/jobs", response_model=schemas.JobListingResponse, status_code=201)
 def create_job(job: schemas.JobListingCreate, db: Session = Depends(get_db)):
