@@ -1,6 +1,6 @@
 from pydantic import BaseModel, model_validator, ConfigDict, Field, field_validator
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 class LocationEnum(str, Enum):
@@ -65,5 +65,19 @@ class ApplicationResponse(ApplicationBase):
     id: int
     job_id: int
     status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ApplicationStatusUpdate(BaseModel):
+    status: str
+    note: str
+
+class ApplicationHistoryResponse(BaseModel):
+    id: int
+    application_id: int
+    previous_status: str
+    new_status: str
+    manager_note: str
+    changed_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

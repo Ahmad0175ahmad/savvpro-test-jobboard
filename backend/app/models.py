@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, Enum as SQLAlchemyEnum, JSON, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, Date,DateTime, Enum as SQLAlchemyEnum, JSON, ForeignKey, UniqueConstraint
 import enum
 from .database import Base
+import datetime
 
 class LocationEnum(str, enum.Enum):
     remote = "remote"
@@ -38,3 +39,13 @@ class Application(Base):
     __table_args__ = (
         UniqueConstraint("job_id", "email", name="uq_job_email"),
     )
+
+class ApplicationHistory(Base):
+    __tablename__ = "application_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    manager_note = Column(String, nullable=False)
+    changed_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), nullable=False)

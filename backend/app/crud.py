@@ -78,3 +78,42 @@ def create_application(db: Session, job_id: int, application: schemas.Applicatio
     db.commit()
     db.refresh(db_app)
     return db_app
+
+
+VALID_TRANSITIONS = {
+    "pending": ["shortlisted", "rejected"],
+    "shortlisted": ["offered", "rejected"],
+    "offered": ["rejected"],
+    "rejected": [] # Terminal state
+}
+
+def get_applications_by_job(db: Session, job_id: int, status_filter: Optional[str] = None):
+    query = db.query(models.Application).filter(models.Application.job_id == job_id)
+    if status_filter:
+        query = query.filter(models.Application.status == status_filter)
+    return query.all()
+
+def update_application_status(db: Session, application_id: int, new_status: str, note: str):
+    app = db.query(models.Application).filter(models.Application.id == application_id).first()
+    
+    if not app:
+        raise ValueError("Application not found")
+        
+    if new_status not in VALID_TRANSITIONS.get(app.status, []):
+        raise ValueError(f"Invalid transition from '{app.status}' to '{new_status}'")
+
+    # Create the history log
+    history_entry = models.ApplicationHistory(
+        application_id=app.id,
+        previous_status=app.status,
+        new_status=new_status,
+        manager_note=note
+    )
+    db.add(history_entry)
+
+    # Update the application status
+    app.status = new_status
+    db.commit()
+    db.refresh(app)
+    
+    return app

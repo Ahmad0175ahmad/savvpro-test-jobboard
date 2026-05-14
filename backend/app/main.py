@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 from . import models, schemas, crud
 from .database import engine, get_db
@@ -61,4 +61,26 @@ def apply_for_job(id: int, application: schemas.ApplicationCreate, db: Session =
     try:
         return crud.create_application(db=db, job_id=id, application=application)
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@app.get("/api/jobs/{id}/applications", response_model=List[schemas.ApplicationResponse])
+def get_job_applications(id: int, status: Optional[str] = None, db: Session = Depends(get_db)):
+    # Verify job exists first
+    job = crud.get_job(db, id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    return crud.get_applications_by_job(db, job_id=id, status_filter=status)
+
+@app.patch("/api/applications/{id}/status", response_model=schemas.ApplicationResponse)
+def update_status(id: int, update_data: schemas.ApplicationStatusUpdate, db: Session = Depends(get_db)):
+    try:
+        return crud.update_application_status(
+            db=db, 
+            application_id=id, 
+            new_status=update_data.status, 
+            note=update_data.note
+        )
+    except ValueError as e:
+        # Catch our custom transition rules errors and return a 400
         raise HTTPException(status_code=400, detail=str(e))
