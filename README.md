@@ -82,3 +82,24 @@ For more details on the system, please refer to the following documents:
 `ARCHITECTURE.md:` System design, data models, and business logic decisions.
 
 `AI_USAGE.md:` Documentation of AI tools used during development and debugging.
+
+## 📸 Screenshots
+
+### Platform Analytics Dashboard
+![Dashboard View](./assets/Dashboard.png)
+
+### Open Roles & Filtering
+![Job Listings View 1](./assets/Listing1.png)
+![Job Listings View 2](./assets/Listing2.png)
+
+### Job Posting Form
+![Post a Job](./assets/Job-Post.png)
+
+### Job Application Form
+![Apply for a Job](./assets/Apply-Job.png)
+
+### Applicant Pipeline Management
+![Manage Applications](./assets/Applications-manage.png)
+
+### Backend API Documentation
+![FastAPI Swagger Docs](./assets/backend-docs.png)

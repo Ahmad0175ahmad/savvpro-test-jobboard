@@ -1,6 +1,7 @@
 # Project Structure
 
 savvpro-test-jobboard/
+|__assets/                   # Contain images of UI
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
