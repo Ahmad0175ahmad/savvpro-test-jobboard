@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
-from sqlalchemy import cast, String
+from sqlalchemy import cast, String, func
 from datetime import date
 from typing import Optional
 def create_job_listing(db: Session, job: schemas.JobListingCreate):
@@ -117,3 +117,65 @@ def update_application_status(db: Session, application_id: int, new_status: str,
     db.refresh(app)
     
     return app
+
+def get_stats(db: Session):
+    total_jobs = db.query(models.JobListing).count()
+    
+    # Calculate open jobs (not manually closed AND deadline hasn't passed)
+    open_jobs = db.query(models.JobListing).filter(
+        models.JobListing.is_closed == False, 
+        models.JobListing.deadline >= date.today()
+    ).count()
+    
+    closed_jobs = total_jobs - open_jobs
+    
+    total_applications = db.query(models.Application).count()
+    
+    avg_apps = round(total_applications / total_jobs, 2) if total_jobs > 0 else 0.0
+    
+    # Get the department with the most jobs
+    top_dept_row = db.query(
+        models.JobListing.department, 
+        func.count(models.JobListing.id).label('count')
+    ).group_by(models.JobListing.department).order_by(func.count(models.JobListing.id).desc()).first()
+    
+    top_department = top_dept_row[0] if top_dept_row else "N/A"
+
+    return {
+        "total_jobs": total_jobs,
+        "open_jobs": open_jobs,
+        "closed_jobs": closed_jobs,
+        "total_applications": total_applications,
+        "avg_applications_per_job": avg_apps,
+        "top_department": top_department
+    }
+
+def close_job(db: Session, job_id: int):
+    job = get_job(db, job_id)
+    if not job:
+        raise ValueError("Job not found")
+    if job.is_closed:
+        raise ValueError("Job is already closed")
+
+    # 1. Close the job
+    job.is_closed = True
+
+    # 2. Auto-reject all 'pending' applications for this job
+    pending_apps = db.query(models.Application).filter(
+        models.Application.job_id == job_id, 
+        models.Application.status == "pending"
+    ).all()
+
+    for app in pending_apps:
+        app.status = "rejected"
+        history_entry = models.ApplicationHistory(
+            application_id=app.id,
+            previous_status="pending",
+            new_status="rejected",
+            manager_note="System auto-rejection: Job listing was manually closed."
+        )
+        db.add(history_entry)
+
+    db.commit()
+    db.refresh(job)
+    return job

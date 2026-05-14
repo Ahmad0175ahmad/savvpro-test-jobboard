@@ -84,3 +84,16 @@ def update_status(id: int, update_data: schemas.ApplicationStatusUpdate, db: Ses
     except ValueError as e:
         # Catch our custom transition rules errors and return a 400
         raise HTTPException(status_code=400, detail=str(e))
+    
+@app.get("/api/stats", response_model=schemas.JobStats)
+def read_stats(db: Session = Depends(get_db)):
+    return crud.get_stats(db)
+
+@app.patch("/api/jobs/{id}/close", response_model=schemas.JobListingResponse)
+def close_job_endpoint(id: int, db: Session = Depends(get_db)):
+    try:
+        return crud.close_job(db=db, job_id=id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

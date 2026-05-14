@@ -81,3 +81,11 @@ class ApplicationHistoryResponse(BaseModel):
     changed_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class JobStats(BaseModel):
+    total_jobs: int
+    open_jobs: int
+    closed_jobs: int
+    total_applications: int
+    avg_applications_per_job: float
+    top_department: str
